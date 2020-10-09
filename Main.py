@@ -12,6 +12,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from imblearn.under_sampling import RandomUnderSampler
+from sklearn.model_selection import cross_val_score
 
 # Models
 from sklearn.linear_model import LogisticRegression
@@ -93,9 +94,10 @@ def select_best_model(X_train, X_test, y_train, y_test):
     best_accuracy = 0
 
     for model in models:
+        print("\nModel: ", type(model).__name__)
         model.fit(X_train, y_train)
-        accuracy = model.score(X_test, y_test)
-        print('\nAccuracy: ', accuracy)
+        accuracy = np.mean(cross_val_score(model, X_train, y_train, cv=5))
+        print('Accuracy: ', accuracy)
 
         y_pred = model.predict(X_test)
         confusion = confusion_matrix(y_test, y_pred)
@@ -105,6 +107,7 @@ def select_best_model(X_train, X_test, y_train, y_test):
             best_model = model
             best_accuracy = accuracy
 
+    print("The best model is: ", type(best_model).__name__, "with an accuracy of ", best_accuracy)
     return best_model
 
 
