@@ -64,7 +64,7 @@ def get_all_words(doc):
 
 
 # sadness: 0; happiness: 1; anger: 2
-def predict_sentiment(tweet):
+def predict_sentiment(tweet, model):
     tweet = vect.transform([tweet])
 
     sentiment = model.predict(tweet)[0]
@@ -111,8 +111,8 @@ print("Post-processing tweets:\n\n", new_doc.head())
 words = get_all_words(new_doc)
 
 # Create a dictionary with the frequencies
-#count_vect = CountVectorizer(min_df=5)
-count_vect = TfidfVectorizer()
+count_vect = CountVectorizer(min_df=2)
+#count_vect = TfidfVectorizer()
 vect = count_vect.fit(words)
 
 feature_names = vect.get_feature_names()
@@ -132,7 +132,7 @@ X_train, X_test, y_train, y_test = train_test_split(X_vect, data['sentiment_id']
 # Create new model
 model = LogisticRegression(random_state=0).fit(X_train, y_train)
 
-print("\n\nModel accuracy: ", model.score(X_test, y_test))
+print("\n\nLogistic regression accuracy: ", model.score(X_test, y_test))
 
 y_pred = model.predict(X_test)
 confusion = confusion_matrix(y_test, y_pred)
@@ -143,6 +143,22 @@ print("\nConfusion matrix:\n{}".format(confusion))
 
 #print("\n", predict_sentiment("Very happy to be here"))
 
+# Create different model
+from sklearn.svm import SVC
+
+# Train model
+model2 = SVC(kernel='linear', 
+            class_weight='balanced', # penalize
+            probability=True).fit(X_train, y_train)
+
+print("\n\nSVC accuracy: ", model2.score(X_test, y_test))
+
+y_pred = model2.predict(X_test)
+confusion = confusion_matrix(y_test, y_pred)
+print("\nConfusion matrix:\n{}".format(confusion))
+
+
+
 while True:
     tweet = input("\nEnter your tweet: ")
-    print(predict_sentiment(tweet))
+    print(predict_sentiment(tweet, model2))
