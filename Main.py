@@ -64,10 +64,10 @@ def get_all_words(doc):
 
 
 # sadness: 0; happiness: 1; anger: 2
-def predict_sentiment(tweet, model):
-    tweet = vect.transform([tweet])
+def predict_sentiment(doc, model):
+    doc = vect.transform([doc])
 
-    sentiment = model.predict(tweet)[0]
+    sentiment = model.predict(doc)[0]
     
     if sentiment == 0:
         return "Sadness :("
@@ -129,7 +129,8 @@ print("\nNew X size:\n", X_vect.toarray().shape)
 X_train, X_test, y_train, y_test = train_test_split(X_vect, data['sentiment_id'], random_state=0)
 
 
-# Create new model
+
+###### Create Model ######
 model = LogisticRegression(random_state=0).fit(X_train, y_train)
 
 print("\n\nLogistic regression accuracy: ", model.score(X_test, y_test))
@@ -141,7 +142,6 @@ print("\nConfusion matrix:\n{}".format(confusion))
 #tweet_vect = vect.transform(["Very sad to be alone"])
 #print(model.predict(tweet_vect))
 
-#print("\n", predict_sentiment("Very happy to be here"))
 
 # Create different model
 from sklearn.svm import SVC
@@ -160,5 +160,5 @@ print("\nConfusion matrix:\n{}".format(confusion))
 
 
 while True:
-    tweet = input("\nEnter your tweet: ")
-    print(predict_sentiment(tweet, model2))
+    doc = input("\nEnter your message: ")
+    print(predict_sentiment(doc, model2))
