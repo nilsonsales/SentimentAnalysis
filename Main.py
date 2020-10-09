@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-import nltk                                # Python library for NLP
+import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer 
 import re
@@ -10,17 +10,22 @@ import string
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix
+from imblearn.under_sampling import RandomUnderSampler
+
+# Models
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 
 
 
 def process_doc(doc):
     '''
-    - Tokenizing the string
-    - Lowercasing
-    - Removing stop words and punctuation
-    - Stemming
+    - Tokenize the string
+    - Lowercase
+    - Remove stop words and punctuation
+    - Stem
     '''
 
     # Lowercase all words
@@ -46,9 +51,9 @@ def process_doc(doc):
     # Create an empty list to store the stems
     tweets_stem = '' 
 
+    # Get the words together as a phrase
     for word in tokens:
         stem_word = stemmer.stem(word)  # stemming word
-        #tweets_stem.append(stem_word)  # append to the list
         tweets_stem += ' '+stem_word
     
     return tweets_stem
@@ -63,7 +68,7 @@ def get_all_words(doc):
     return list_of_words
 
 
-# sadness: 0; happiness: 1; anger: 2
+# sadness: 0; anger: 1; happiness: 2
 def predict_sentiment(doc, model):
     doc = vect.transform([doc])
 
@@ -72,34 +77,63 @@ def predict_sentiment(doc, model):
     if sentiment == 0:
         return "Sadness :("
     elif sentiment == 1:
+        return "Anger -.-"
+    else:
         return "Happiness :)"
-    return "Anger -.-"
 
+
+def select_best_model(X_train, X_test, y_train, y_test):
+    model_1 = LogisticRegression(random_state=0)
+    model_2 = SVC(kernel='linear', probability=True)
+    model_3 = RandomForestClassifier()
+
+    models = [model_1, model_2, model_3]
+    
+    best_model = None
+    best_accuracy = 0
+
+    for model in models:
+        model.fit(X_train, y_train)
+        accuracy = model.score(X_test, y_test)
+        print('\nAccuracy: ', accuracy)
+
+        y_pred = model.predict(X_test)
+        confusion = confusion_matrix(y_test, y_pred)
+        print("Confusion matrix:\n{}".format(confusion))
+        
+        if accuracy > best_accuracy:
+            best_model = model
+            best_accuracy = accuracy
+
+    return best_model
 
 
 
 # Data downloaded from https://data.world/crowdflower/sentiment-analysis-in-text
 data = pd.read_csv('data/text_emotion.csv')
-print("Dataset loaded.\n")
+print("Dataset loaded.\n\n")
 
 
-columns_to_keep = ['content', 'sentiment']
+# Select also 'hate' to increase the sample size
 emotions_to_keep = ['happiness', 'sadness', 'anger']
+columns_to_keep = ['content', 'sentiment']
 
 # Get rid of the other columns
 data = data[columns_to_keep]
 
-# Select the two sentiments of interest 
-data = data[data['sentiment'].isin(emotions_to_keep)]
-print(data['sentiment'].value_counts())
+# Let's consider 'hate' as 'anger'
+data['sentiment'][ data['sentiment'] == 'hate'] = 'anger'
 
-# Add an intergeer to represent each sentiment
-# sadness: 0; happiness: 1; anger: 2
+# Select the three sentiments of interest 
+data = data[data['sentiment'].isin(emotions_to_keep)]
+print(data['sentiment'].value_counts(), "\n") 
+
+# Represent each sentiment with an index
 data['sentiment_id'] = data['sentiment'].factorize()[0]
 
 for i in [0,1,2]:
     tweet = data[ data['sentiment_id'] == i ].iloc[0]
-    print(tweet['sentiment'], ": ", tweet['content'])
+    print(tweet['sentiment_id'], " ", tweet['sentiment'], ": ", tweet['content'])
 
 
 ##### Data Cleaning ######
@@ -107,58 +141,45 @@ for i in [0,1,2]:
 new_doc = data['content'].apply(process_doc)
 print("Post-processing tweets:\n\n", new_doc.head())
 
+
+##### Vectorise Features ######
+
 # Get list of all words in the tweets
 words = get_all_words(new_doc)
 
 # Create a dictionary with the frequencies
-count_vect = CountVectorizer(min_df=2)
-#count_vect = TfidfVectorizer()
+#count_vect = CountVectorizer(min_df=3)
+count_vect = TfidfVectorizer(min_df=5)
 vect = count_vect.fit(words)
 
 feature_names = vect.get_feature_names()
 print("First 20 features:\n{}".format(feature_names[:20]))
-
 #vect.vocabulary_
 
 # Vectorize tweets to a sparse matrix
 X_vect = vect.transform(new_doc)
-print("\nNew X size:\n", X_vect.toarray().shape)
+#print("\nNew X size:\n", X_vect.toarray().shape)
 
 
-# Split training and test data sets
-X_train, X_test, y_train, y_test = train_test_split(X_vect, data['sentiment_id'], random_state=0)
+##### Use sampling to fix the unbalanced sets #####
+
+rus = RandomUnderSampler()
+X_rus, y_rus = rus.fit_sample(X_vect, data['sentiment_id'])
+
+# Split using balanced sample
+X_train, X_test, y_train, y_test = train_test_split(X_rus, y_rus, random_state=0)
+
+# Split without using balanced sample
+#X_train, X_test, y_train, y_test = train_test_split(X_vect, data['sentiment_id'], random_state=0)
+
+print("Y_train frequencies:\n", y_train.value_counts())
 
 
+###### Select the best model ######
 
-###### Create Model ######
-model = LogisticRegression(random_state=0).fit(X_train, y_train)
+model = select_best_model(X_train, X_test, y_train, y_test)
 
-print("\n\nLogistic regression accuracy: ", model.score(X_test, y_test))
-
-y_pred = model.predict(X_test)
-confusion = confusion_matrix(y_test, y_pred)
-print("\nConfusion matrix:\n{}".format(confusion))
-
-#tweet_vect = vect.transform(["Very sad to be alone"])
-#print(model.predict(tweet_vect))
-
-
-# Create different model
-from sklearn.svm import SVC
-
-# Train model
-model2 = SVC(kernel='linear', 
-            class_weight='balanced', # penalize
-            probability=True).fit(X_train, y_train)
-
-print("\n\nSVC accuracy: ", model2.score(X_test, y_test))
-
-y_pred = model2.predict(X_test)
-confusion = confusion_matrix(y_test, y_pred)
-print("\nConfusion matrix:\n{}".format(confusion))
-
-
-
-while True:
-    doc = input("\nEnter your message: ")
-    print(predict_sentiment(doc, model2))
+doc = ''
+while doc != '0':
+    doc = input("\nEnter your message (0 to quit): ")
+    print(predict_sentiment(doc, model))
