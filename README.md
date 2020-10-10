@@ -8,12 +8,12 @@ pip install -r requirements.txt
 ```
 
 ### Running
-After that, you'll be able to run the project:
+Make sure you use Python3 to run the project:
 ```
-python Main.py
+python3 Main.py
 ```
 
-Some logs and metrics will be shown while the models are being build. After some seconds you'll be able to enter your text in the terminal. You can see some output examples bellow:
+Some logs and metrics will be shown while the models are being built. After some seconds you'll be able to enter your text in the terminal. You can see some output examples bellow:
 
 ```
 Enter your message (0 to quit): I miss you
