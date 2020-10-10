@@ -93,7 +93,7 @@ def vectorite_features(new_doc):
 def build_train_test(X_vect, labels, balanced=False):
     # Use sampling to fix the unbalanced sets
     if balanced==True:
-        print("--- Using balanced samples ---")
+        print(">>> Using balanced samples")
         rus = RandomUnderSampler()
         X_rus, y_rus = rus.fit_sample(X_vect, labels)
 
@@ -102,7 +102,7 @@ def build_train_test(X_vect, labels, balanced=False):
     
     # Split without using balanced sample
     else:
-        print("--- Using imbalanced samples ---")
+        print(">>> Using imbalanced samples")
         X_train, X_test, y_train, y_test = train_test_split(X_vect, labels, random_state=0)
 
     return X_train, X_test, y_train, y_test
@@ -117,6 +117,8 @@ def select_best_model(X_train, X_test, y_train, y_test):
     
     best_model = None
     best_accuracy = 0
+
+    print("\n####### Training Models #######")
 
     for model in models:
         print("\nModel: ", type(model).__name__)
@@ -155,7 +157,7 @@ def predict_sentiment(doc, model):
 
 # Data downloaded from https://data.world/crowdflower/sentiment-analysis-in-text
 data = pd.read_csv('data/text_emotion.csv')
-print("Dataset loaded.\n\n")
+print("\n>>> Dataset loaded\n\n")
 
 # Let's use just two columns from the dataset
 columns_to_keep = ['content', 'sentiment']
@@ -182,7 +184,7 @@ for i in [0,1,2]:
 
 ##### ---- Data Cleaning ---- ######
 new_doc = data['content'].apply(process_doc)
-print("Post-processing tweets:\n\n", new_doc.head())
+print("\nPost-processing tweets:\n\n", new_doc.head())
 
 
 ##### ---- Vectorise Features ---- ######
@@ -199,4 +201,5 @@ model = select_best_model(X_train, X_test, y_train, y_test)
 user_text = ''
 while user_text != '0':
     user_text = input("\nEnter your message (0 to quit): ")
-    print(predict_sentiment(user_text, model))
+    if user_text != '0':
+        print(predict_sentiment(user_text, model))
