@@ -3,7 +3,9 @@ import numpy as np
 
 import nltk
 from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer 
+from nltk.stem import PorterStemmer
+nltk.download('stopwords')
+
 import re
 import string
 
@@ -69,6 +71,26 @@ def get_all_words(doc):
     return list_of_words
 
 
+def vectorite_features(new_doc):
+    # Get list of all words in the tweets
+    words = get_all_words(new_doc)
+
+    # Create a dictionary with the frequencies
+    #count_vect = CountVectorizer(min_df=3)
+    count_vect = TfidfVectorizer(min_df=5)
+    vect = count_vect.fit(words)
+
+    feature_names = vect.get_feature_names()
+    print("First 20 features:\n{}".format(feature_names[:20]))
+    #vect.vocabulary_
+
+    # Vectorize tweets to a sparse matrix
+    X_vect = vect.transform(new_doc)
+
+    return X_vect, vect
+
+
+# Use the build model to predict a sentiment
 # sadness: 0; anger: 1; happiness: 2
 def predict_sentiment(doc, model):
     doc = vect.transform([doc])
@@ -112,30 +134,27 @@ def select_best_model(X_train, X_test, y_train, y_test):
 
 
 
-# Uncomment the next line if you have problems with the 'stopwords' module
-#nltk.download('stopwords')
-
 
 # Data downloaded from https://data.world/crowdflower/sentiment-analysis-in-text
 data = pd.read_csv('data/text_emotion.csv')
 print("Dataset loaded.\n\n")
 
-
-# Select also 'hate' to increase the sample size
-emotions_to_keep = ['happiness', 'sadness', 'anger']
+# Let's use just two columns from the dataset
 columns_to_keep = ['content', 'sentiment']
 
-# Get rid of the other columns
 data = data[columns_to_keep]
 
-# Let's consider 'hate' as 'anger'
+# Let's consider 'hate' as 'anger' to increase our sample size
 data['sentiment'][ data['sentiment'] == 'hate'] = 'anger'
 
-# Select the three sentiments of interest 
+# Select only the tweets with the three sentiments of interest
+emotions_to_keep = ['happiness', 'sadness', 'anger']
+
 data = data[data['sentiment'].isin(emotions_to_keep)]
 print(data['sentiment'].value_counts(), "\n") 
 
-# Represent each sentiment with an index
+
+# Use an index to represent each sentiment
 data['sentiment_id'] = data['sentiment'].factorize()[0]
 
 for i in [0,1,2]:
@@ -143,32 +162,20 @@ for i in [0,1,2]:
     print(tweet['sentiment_id'], " ", tweet['sentiment'], ": ", tweet['content'])
 
 
-##### Data Cleaning ######
+
+##### ---- Data Cleaning ---- ######
 
 new_doc = data['content'].apply(process_doc)
 print("Post-processing tweets:\n\n", new_doc.head())
 
 
-##### Vectorise Features ######
+##### ---- Vectorise Features ---- ######
 
-# Get list of all words in the tweets
-words = get_all_words(new_doc)
-
-# Create a dictionary with the frequencies
-#count_vect = CountVectorizer(min_df=3)
-count_vect = TfidfVectorizer(min_df=5)
-vect = count_vect.fit(words)
-
-feature_names = vect.get_feature_names()
-print("First 20 features:\n{}".format(feature_names[:20]))
-#vect.vocabulary_
-
-# Vectorize tweets to a sparse matrix
-X_vect = vect.transform(new_doc)
-#print("\nNew X size:\n", X_vect.toarray().shape)
+X_vect, vect = vectorite_features(new_doc)
 
 
-##### Use sampling to fix the unbalanced sets #####
+
+##### ---- Use sampling to fix the unbalanced sets ---- #####
 
 rus = RandomUnderSampler()
 X_rus, y_rus = rus.fit_sample(X_vect, data['sentiment_id'])
@@ -186,7 +193,7 @@ print("Y_train frequencies:\n", y_train.value_counts())
 
 model = select_best_model(X_train, X_test, y_train, y_test)
 
-doc = ''
-while doc != '0':
-    doc = input("\nEnter your message (0 to quit): ")
-    print(predict_sentiment(doc, model))
+user_text = ''
+while user_text != '0':
+    user_text = input("\nEnter your message (0 to quit): ")
+    print(predict_sentiment(user_text, model))
