@@ -20,6 +20,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 
 
 
@@ -111,9 +112,11 @@ def build_train_test(X_vect, labels, balanced=False):
 def select_best_model(X_train, X_test, y_train, y_test):
     model_1 = LogisticRegression(random_state=0)
     model_2 = SVC(kernel='linear', probability=True)
-    model_3 = RandomForestClassifier()
+    model_3 = SVC(kernel='rbf', C=10, gamma=0.01)
+    model_4 = RandomForestClassifier(n_estimators=100, random_state=2, n_jobs=-1)
+    model_5 = MLPClassifier(solver='adam', alpha=1, max_iter=1000, random_state=0, hidden_layer_sizes=[10, 10])
 
-    models = [model_1, model_2, model_3]
+    models = [model_1, model_2, model_3, model_4, model_5]
     
     best_model = None
     best_accuracy = 0
