@@ -112,6 +112,10 @@ def select_best_model(X_train, X_test, y_train, y_test):
 
 
 
+# Uncomment the next line if you have problems with the 'stopwords' module
+#nltk.download('stopwords')
+
+
 # Data downloaded from https://data.world/crowdflower/sentiment-analysis-in-text
 data = pd.read_csv('data/text_emotion.csv')
 print("Dataset loaded.\n\n")
