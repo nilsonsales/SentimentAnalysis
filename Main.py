@@ -81,7 +81,7 @@ def vectorite_features(new_doc):
     vect = count_vect.fit(words)
 
     feature_names = vect.get_feature_names()
-    print("First 20 features:\n{}".format(feature_names[:20]))
+    print("\nFirst 10 features:\n", feature_names[:10], "\n")
     #vect.vocabulary_
 
     # Vectorize tweets to a sparse matrix
@@ -90,19 +90,22 @@ def vectorite_features(new_doc):
     return X_vect, vect
 
 
-# Use the build model to predict a sentiment
-# sadness: 0; anger: 1; happiness: 2
-def predict_sentiment(doc, model):
-    doc = vect.transform([doc])
+def build_train_test(X_vect, labels, balanced=False):
+    # Use sampling to fix the unbalanced sets
+    if balanced==True:
+        print("--- Using balanced samples ---")
+        rus = RandomUnderSampler()
+        X_rus, y_rus = rus.fit_sample(X_vect, labels)
 
-    sentiment = model.predict(doc)[0]
+        # Split using balanced sample
+        X_train, X_test, y_train, y_test = train_test_split(X_rus, y_rus, random_state=0)
     
-    if sentiment == 0:
-        return "Sadness :("
-    elif sentiment == 1:
-        return "Anger -.-"
+    # Split without using balanced sample
     else:
-        return "Happiness :)"
+        print("--- Using imbalanced samples ---")
+        X_train, X_test, y_train, y_test = train_test_split(X_vect, labels, random_state=0)
+
+    return X_train, X_test, y_train, y_test
 
 
 def select_best_model(X_train, X_test, y_train, y_test):
@@ -133,6 +136,21 @@ def select_best_model(X_train, X_test, y_train, y_test):
     return best_model
 
 
+# Use the built model to predict a sentiment
+# sadness: 0; anger: 1; happiness: 2
+def predict_sentiment(doc, model):
+    doc = vect.transform([doc])
+
+    sentiment = model.predict(doc)[0]
+    
+    if sentiment == 0:
+        return "Sadness :("
+    elif sentiment == 1:
+        return "Anger -.-"
+    else:
+        return "Happiness :)"
+
+
 
 
 # Data downloaded from https://data.world/crowdflower/sentiment-analysis-in-text
@@ -144,10 +162,10 @@ columns_to_keep = ['content', 'sentiment']
 
 data = data[columns_to_keep]
 
-# Let's consider 'hate' as 'anger' to increase our sample size
+# Let's merge 'hate' and 'anger' to increase our sample size
 data['sentiment'][ data['sentiment'] == 'hate'] = 'anger'
 
-# Select only the tweets with the three sentiments of interest
+# Select only the tweets belonging to our sentiments of interest
 emotions_to_keep = ['happiness', 'sadness', 'anger']
 
 data = data[data['sentiment'].isin(emotions_to_keep)]
@@ -162,35 +180,20 @@ for i in [0,1,2]:
     print(tweet['sentiment_id'], " ", tweet['sentiment'], ": ", tweet['content'])
 
 
-
 ##### ---- Data Cleaning ---- ######
-
 new_doc = data['content'].apply(process_doc)
 print("Post-processing tweets:\n\n", new_doc.head())
 
 
 ##### ---- Vectorise Features ---- ######
-
 X_vect, vect = vectorite_features(new_doc)
 
 
-
-##### ---- Use sampling to fix the unbalanced sets ---- #####
-
-rus = RandomUnderSampler()
-X_rus, y_rus = rus.fit_sample(X_vect, data['sentiment_id'])
-
-# Split using balanced sample
-X_train, X_test, y_train, y_test = train_test_split(X_rus, y_rus, random_state=0)
-
-# Split without using balanced sample
-#X_train, X_test, y_train, y_test = train_test_split(X_vect, data['sentiment_id'], random_state=0)
-
-print("Y_train frequencies:\n", y_train.value_counts())
+# Building training and test sets
+X_train, X_test, y_train, y_test = build_train_test(X_vect, data['sentiment_id'], balanced=True)
 
 
 ###### Select the best model ######
-
 model = select_best_model(X_train, X_test, y_train, y_test)
 
 user_text = ''
