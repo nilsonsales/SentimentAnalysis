@@ -102,7 +102,7 @@ def build_train_test(X_vect, labels, balanced=False):
     
     # Split without using balanced sample
     else:
-        print(">>> Using imbalanced samples")
+        print(">>> Using imbalanced dataset")
         X_train, X_test, y_train, y_test = train_test_split(X_vect, labels, random_state=0)
 
     return X_train, X_test, y_train, y_test
