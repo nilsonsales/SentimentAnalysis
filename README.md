@@ -8,7 +8,7 @@ pip install -r requirements.txt
 ```
 
 ### Running
-Make sure you use Python3 to run the project:
+Make sure to use Python3 to run the project:
 ```
 python3 Main.py
 ```
