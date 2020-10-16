@@ -63,30 +63,18 @@ def process_doc(doc):
     return tweets_stem
 
 
-# Build vocabulary
-def get_all_words(doc):
-    list_of_words = []
-    for word in doc:
-        list_of_words.append(word)
-
-    return list_of_words
-
-
-def vectorite_features(new_doc):
-    # Get list of all words in the tweets
-    words = get_all_words(new_doc)
-
-    # Create a dictionary with the frequencies
+def vectorite_features(tweets):
+    # Create a dictionary with the word frequencies
     #count_vect = CountVectorizer(min_df=3)
     count_vect = TfidfVectorizer(min_df=5)
-    vect = count_vect.fit(words)
+    vect = count_vect.fit(tweets)
 
     feature_names = vect.get_feature_names()
     print("\nFirst 10 features:\n", feature_names[:10], "\n")
     #vect.vocabulary_
 
     # Vectorize tweets to a sparse matrix
-    X_vect = vect.transform(new_doc)
+    X_vect = vect.transform(tweets)
 
     return X_vect, vect
 
