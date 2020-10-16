@@ -15,6 +15,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from imblearn.under_sampling import RandomUnderSampler
 from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import StandardScaler
 
 # Models
 from sklearn.linear_model import LogisticRegression
@@ -79,7 +80,13 @@ def vectorite_features(tweets):
     return X_vect, vect
 
 
-def build_train_test(X_vect, labels, balanced=False):
+def build_train_test(X_vect, labels, balanced=False, scaling=False):
+    
+    if scaling==True:
+        scaler = StandardScaler(with_mean=False)
+        X_vect = scaler.fit_transform(X_vect)
+
+
     # Use sampling to fix the unbalanced sets
     if balanced==True:
         print(">>> Using balanced samples")
@@ -98,8 +105,8 @@ def build_train_test(X_vect, labels, balanced=False):
 
 
 def select_best_model(X_train, X_test, y_train, y_test):
-    model_1 = LogisticRegression(random_state=0)
-    model_2 = SVC(kernel='linear', probability=True)
+    model_1 = LogisticRegression(random_state=0, max_iter=3000)
+    model_2 = SVC(kernel='linear', probability=False)
     model_3 = SVC(kernel='rbf', C=10, gamma=0.01)
     model_4 = RandomForestClassifier(n_estimators=100, random_state=2, n_jobs=-1)
     model_5 = MLPClassifier(solver='adam', alpha=1, max_iter=1000, random_state=0, hidden_layer_sizes=[10, 10])
@@ -183,7 +190,7 @@ X_vect, vect = vectorite_features(new_doc)
 
 
 # Building training and test sets
-X_train, X_test, y_train, y_test = build_train_test(X_vect, data['sentiment_id'], balanced=True)
+X_train, X_test, y_train, y_test = build_train_test(X_vect, data['sentiment_id'], balanced=True, scaling=False)
 
 
 ###### Select the best model ######
